@@ -2,12 +2,15 @@ import streamlit as st
 from pypdf import PdfReader
 from sentence_transformers import SentenceTransformer, util
 import re
+import speech_recognition as sr
+import pyttsx3
 
 class EnhancedPDFChatbot:
     def __init__(self, pdf_path):
         self.pdf_text = self._extract_text(pdf_path)
         self.sentences = self._remove_duplicates(self._split_into_sentences(self.pdf_text))
         self.model = SentenceTransformer('all-MiniLM-L6-v2')  # Load model locally
+        self.tts_engine = pyttsx3.init()
 
     def _extract_text(self, pdf_path):
         """Extract text from PDF file"""
@@ -71,6 +74,25 @@ class EnhancedPDFChatbot:
             context.append(self.sentences[index + 1])
         return " ".join(context)
 
+    def speak_response(self, text):
+        """Convert text response to speech"""
+        self.tts_engine.say(text)
+        self.tts_engine.runAndWait()
+
+# Speech-to-Text Function
+def speech_to_text():
+    recognizer = sr.Recognizer()
+    with sr.Microphone() as source:
+        st.info("Listening...")
+        try:
+            audio = recognizer.listen(source)
+            text = recognizer.recognize_google(audio)
+            return text
+        except sr.UnknownValueError:
+            return "Could not understand the audio."
+        except sr.RequestError:
+            return "Speech Recognition service is unavailable."
+
 # Streamlit UI
 st.set_page_config(layout="wide")  # Set layout to wide
 
@@ -98,9 +120,14 @@ with col2:
             st.write(f"{answer}")
 
     user_input = st.text_input("Ask something about the PDF:", key="chat_input")
+    if st.button("🎙️ Speak Your Question"):
+        user_input = speech_to_text()
+        st.text(f"You said: {user_input}")
+    
     if user_input:
         responses = chatbot.get_response(user_input)
         if responses:
             response_text = "\n".join([f"📌 {r['answer']}\n💡 Context: {r['context']}" for r in responses])
             st.session_state.chat_history.append((user_input, response_text))
+            chatbot.speak_response(response_text)
             st.rerun()

@@ -2,4 +2,6 @@ streamlit
 pypdf
 sentence-transformers
 torch
-transformers 
+speechrecognition
+pyttsx3
+pyaudio

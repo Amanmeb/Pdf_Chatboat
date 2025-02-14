@@ -1,7 +1,0 @@
-streamlit
-pypdf
-sentence-transformers
-torch
-speechrecognition
-pyttsx3
-pyaudio
